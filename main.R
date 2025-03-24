@@ -87,7 +87,7 @@ summary(lengths)
 max_length<- quantile(lengths, 0.9)
 
 #use the 1000 most common words
-max_features <- 1000
+max_features <- 10000
 
 #Tokenizing training data
 training_tokenizer <- text_tokenizer(num_words = max_features) %>%
@@ -107,7 +107,8 @@ training_data <- pad_sequences(training_sequences, maxlen = max_length)
 testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 
 
-#### C2.3 ####
+#### C2.3 Creating a simple FFNN ####
+
 
 model <- keras_model_sequential() %>%
   #embedding layer
