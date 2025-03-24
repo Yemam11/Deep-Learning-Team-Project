@@ -25,7 +25,7 @@ setwd(getwd())
 training_data <- read.csv("Corona_NLP_train.csv")
 testing_data <- read.csv("Corona_NLP_test.csv")
 
-#shuffling training data
+#shuffling data
 indicies <- sample(nrow(training_data))
 training_data <- training_data[indicies,]
 
