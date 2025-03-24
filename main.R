@@ -34,29 +34,10 @@ indicies <- sample(nrow(testing_data))
 testing_data <- testing_data[indicies,]
 
 
-# Pulling the labels, factorizing
-training_labels <- training_data %>%
-  select(Sentiment) %>% 
-  mutate(Sentiment = as.factor(Sentiment))
-
-testing_labels <- testing_data %>%
-  select(Sentiment) %>% 
-  mutate(Sentiment = as.factor(Sentiment))
-
-#Isolating the tweets
-training_data <- training_data$OriginalTweet
-testing_data <- testing_data$OriginalTweet
-
-#
-
-summary(training_data)
-summary(testing_data)
-
-summary(training_labels)
-summary(testing_labels)
-
 #Distribution of sentiments looks reasonably balanced
-ggplot(training_labels, aes(x = Sentiment, fill = Sentiment))+
+training_labels <- training_data$Sentiment
+
+ggplot(data.frame(Sentiment = training_labels), aes(x = Sentiment, fill = Sentiment))+
   geom_bar()+
   labs(
     y = "Count",
@@ -66,6 +47,27 @@ ggplot(training_labels, aes(x = Sentiment, fill = Sentiment))+
     plot.title = element_text(hjust = 0.5)
   )
 
+
+# Pulling the labels, one-hot encoding
+training_labels <- training_data$Sentiment %>% 
+  as.factor()
+
+#need to zero index to use the to_categorical function
+training_labels <- (as.numeric(training_labels)-1) %>% 
+  to_categorical()
+
+testing_labels <- testing_data$Sentiment %>% 
+  as.factor()
+
+#Isolating the tweets
+training_data <- training_data$OriginalTweet
+testing_data <- testing_data$OriginalTweet
+
+summary(training_data)
+summary(testing_data)
+
+summary(training_labels)
+summary(testing_labels)
 
 #### C2.2 Preprocessing Text and labels ####
 
@@ -84,16 +86,18 @@ summary(lengths)
 # this covers most sequences, but will exclude any outliers
 max_length<- quantile(lengths, 0.9)
 
+#use the 1000 most common words
+max_features <- 1000
 
 #Tokenizing training data
-training_tokenizer <- text_tokenizer(num_words = max_length) %>%
+training_tokenizer <- text_tokenizer(num_words = max_features) %>%
   fit_text_tokenizer(training_data)
 
 training_sequences <- texts_to_sequences(training_tokenizer, training_data)
 
 
 #Tokenizing testing data
-testing_tokenizer <- text_tokenizer(num_words = max_length) %>%
+testing_tokenizer <- text_tokenizer(num_words = max_features) %>%
   fit_text_tokenizer(testing_data)
 
 testing_sequences <- texts_to_sequences(testing_tokenizer, testing_data)
@@ -101,4 +105,35 @@ testing_sequences <- texts_to_sequences(testing_tokenizer, testing_data)
 #padding sequences
 training_data <- pad_sequences(training_sequences, maxlen = max_length)
 testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
+
+
+#### C2.3 ####
+
+model <- keras_model_sequential() %>%
+  #embedding layer
+  layer_embedding(input_dim = max_features, output_dim = 8, input_length = max_length) %>%
+  #flattening
+  layer_flatten() %>%  
+  #One hidden layer
+  layer_dense(units = 512, activation = "relu") %>% 
+  #output layer
+  layer_dense(units = 5, activation = "softmax")
+
+model
+
+#Compiling the model
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("acc")
+)
+
+#training the model
+history <- model %>% fit(
+  training_data,
+  training_labels,
+  epochs = 10,
+  batch_size = 32,
+  validation_split = 0.2
+)
 
