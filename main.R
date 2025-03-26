@@ -37,6 +37,7 @@ testing_data <- testing_data[indicies,]
 #Distribution of sentiments looks reasonably balanced
 training_labels <- training_data$Sentiment
 
+
 ggplot(data.frame(Sentiment = training_labels), aes(x = Sentiment, fill = Sentiment))+
   geom_bar()+
   labs(
@@ -82,6 +83,26 @@ lengths <- nchar(training_data)
 #Distribution of lengths
 summary(lengths)
 
+## ADD TO MAIN BRANCH !!!
+# View the distribution of the lengths 
+
+# make lengths a data frame
+tweet_df <- data.frame(length = lengths)
+
+# Compute quantiles for 5% and 95%
+lower_bound <- quantile(tweet_df$length, 0.05)
+upper_bound <- quantile(tweet_df$length, 0.95)
+
+tweet_df$category <- ifelse(tweet_df$length < lower_bound | tweet_df$length > upper_bound, "Outside", "Middle 90%")
+
+# Make a histogram with ggplot to show distribution and inside 90%
+p <- ggplot(tweet_df, aes(x = length, fill = category)) +
+  geom_histogram(binwidth = 15, color = "black", alpha = 0.7) +
+  scale_fill_manual(values = c("Middle 90%" = "blue", "Outside" = "red")) +
+  labs(title = "Distribution of Tweet Length", x = "Tweet Length", y = "Count") +
+  theme_minimal()
+print(p)
+ 
 #pick the 90th percentile to pad to
 # this covers most sequences, but will exclude any outliers
 max_length<- quantile(lengths, 0.9)
@@ -135,3 +156,37 @@ history <- model %>% fit(
   validation_split = 0.2
 )
 
+#### C2.7 ####
+
+# Replace the simple RNN with a LSTM model, using also dropout. Comment on any improvement in the performance.
+
+# train the LSTM model the same way as the RNN was trained
+# add dropout -> both overall and recurrent dropout -> set to 0.2 !!!3
+model_lstm <- keras_model_sequential() %>%
+  layer_embedding(input_dim = max_features, output_dim = 8) %>% ## output dim same as others, as is input dim !!!
+  layer_lstm(units = 8, dropout = 0.2, recurrent_dropout = 0.2) %>%
+  layer_dense(units = 5, activation = "sigmoid")
+
+# compile the model
+model_lstm %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("acc")
+)
+
+# run the model 
+history_lstm <- model_lstm %>% fit(
+  training_data, 
+  training_labels,
+  epochs = 10,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# set up testing labels -> ADD EARLIER TO MAIN !!!
+testing_labels <- (as.numeric(testing_labels)-1) %>% 
+  to_categorical()
+
+# test the model 
+perf_lstm <- evaluate(model_lstm, testing_data, testing_labels)
+perf_lstm
