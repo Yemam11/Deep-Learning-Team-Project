@@ -27,7 +27,8 @@ testing_data <- read.csv("Corona_NLP_test.csv")
 
 #### C2.2 Preprocessing Text and labels ####
 
-#shuffling data
+#### shuffling data/EDA ####
+
 indicies <- sample(nrow(training_data))
 training_data <- training_data[indicies,]
 
@@ -70,6 +71,7 @@ ggplot(data.frame(Sentiment = training_labels),
     "Extremely Positive" = "#1a9850"   # deep green
   ))
 
+#### One hot encoding ####
 
 # Pulling the labels, one-hot encoding
 training_labels <- training_data$Sentiment %>% 
@@ -87,6 +89,8 @@ testing_labels <- testing_data$Sentiment %>%
 testing_labels <- (as.numeric(testing_labels)-1) %>% 
   to_categorical()
 
+#### Processing training data ####
+
 #Isolating the tweets
 training_data <- training_data$OriginalTweet
 testing_data <- testing_data$OriginalTweet
@@ -102,18 +106,9 @@ summary(testing_labels)
 training_data <- iconv(training_data, from = "UTF-8", to = "UTF-8", sub = "")
 testing_data <- iconv(testing_data, from = "UTF-8", to = "UTF-8", sub = "")
 
+#### Tokenization ####
 
-#find the lengths of all tweets
-lengths <- nchar(training_data)
-
-#Distribution of lengths
-summary(lengths)
-
-#pick the 90th percentile to pad to
-# this covers most sequences, but will exclude any outliers
-max_length<- quantile(lengths, 0.9)
-
-#use the 10000 most common words
+#use the 10000 most common words to start
 max_features <- 10000
 
 #Tokenizing training data
@@ -122,16 +117,58 @@ tokenizer <- text_tokenizer(num_words = max_features) %>%
 
 training_sequences <- texts_to_sequences(tokenizer, training_data)
 
+#Look at how the word frequencies drop off
+#pull the word counts
+word_counts <- tokenizer$word_counts
+
+#remove from list format and sort
+word_freq <- sort(unlist(word_counts), decreasing = TRUE)
+
+#plot
+plot(log10(word_freq), type = "l", 
+     main = "Word Frequencies (Log Scale)", 
+     ylab = "Log(Frequency)")
+
+
+#finding the 90th percentile of frequency
+freq90 <- quantile(word_freq, 0.9)
+
+#find the index of the first word that is less frequent than the cutoff
+which(word_freq <= freq90)[1]
+
+# This should be our max_features
+max_features <- which(word_freq <= freq90)[1]
+
+abline(v = max_features, col = "red", lty = 2, lwd = 2)
+
+# repeat tokenization
+#Tokenizing training data
+tokenizer <- text_tokenizer(num_words = max_features) %>%
+  fit_text_tokenizer(training_data)
+
+training_sequences <- texts_to_sequences(tokenizer, training_data)
 
 #Tokenizing testing data
 testing_sequences <- texts_to_sequences(tokenizer, testing_data)
+
+## Padding Sequences ##
+
+#find the lengths of all tweets
+lengths <- sapply(training_sequences, length)
+
+#Distribution of lengths
+summary(lengths)
+
+#pick the 90th percentile to pad to
+# this covers most sequences, but will exclude any outliers
+max_length<- quantile(lengths, 0.9)
 
 #padding sequences
 training_data <- pad_sequences(training_sequences, maxlen = max_length)
 testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 
 
-#### C2.3 ####
+#### C2.3 - ####
 
 model <- keras_model_sequential() %>%
   #embedding layer
