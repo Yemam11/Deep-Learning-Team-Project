@@ -112,34 +112,38 @@ testing_data <- iconv(testing_data, from = "UTF-8", to = "UTF-8", sub = "")
 max_features <- 10000
 
 #Tokenizing training data
-tokenizer <- text_tokenizer(num_words = max_features) %>%
-  fit_text_tokenizer(training_data)
 
-training_sequences <- texts_to_sequences(tokenizer, training_data)
+# tokenizing based on the upper 90% of most frequent words
 
-#Look at how the word frequencies drop off
-#pull the word counts
-word_counts <- tokenizer$word_counts
-
-#remove from list format and sort
-word_freq <- sort(unlist(word_counts), decreasing = TRUE)
-
-#plot
-plot(log10(word_freq), type = "l", 
-     main = "Word Frequencies (Log Scale)", 
-     ylab = "Log(Frequency)")
-
-
-#finding the 90th percentile of frequency
-freq90 <- quantile(word_freq, 0.9)
-
-#find the index of the first word that is less frequent than the cutoff
-which(word_freq <= freq90)[1]
+# tokenizer <- text_tokenizer(num_words = max_features) %>%
+#   fit_text_tokenizer(training_data)
+# 
+# training_sequences <- texts_to_sequences(tokenizer, training_data)
+# 
+# #Look at how the word frequencies drop off
+# #pull the word counts
+# word_counts <- tokenizer$word_counts
+# 
+# #remove from list format and sort
+# word_freq <- sort(unlist(word_counts), decreasing = TRUE)
+# 
+# #plot
+# plot(log10(word_freq), type = "l", 
+#      main = "Word Frequencies (Log Scale)", 
+#      ylab = "Log(Frequency)")
+# 
+# 
+# #finding the 90th percentile of frequency
+# freq90 <- quantile(word_freq, 0.9)
+# 
+# #find the index of the first word that is less frequent than the cutoff
+# which(word_freq <= freq90)[1]
 
 # This should be our max_features
-max_features <- which(word_freq <= freq90)[1]
+#max_features <- which(word_freq <= freq90)[1]
 
-abline(v = max_features, col = "red", lty = 2, lwd = 2)
+#abline(v = max_features, col = "red", lty = 2, lwd = 2)
+
 
 # repeat tokenization
 #Tokenizing training data
@@ -188,6 +192,8 @@ model %>% compile(
   loss = "categorical_crossentropy",
   metrics = c("acc")
 )
+
+#### C2.4 ####
 
 #training the model
 history <- model %>% fit(
