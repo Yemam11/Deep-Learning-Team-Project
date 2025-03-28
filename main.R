@@ -25,6 +25,8 @@ setwd(getwd())
 training_data <- read.csv("Corona_NLP_train.csv")
 testing_data <- read.csv("Corona_NLP_test.csv")
 
+#### C2.2 Preprocessing Text and labels ####
+
 #shuffling data
 indicies <- sample(nrow(training_data))
 training_data <- training_data[indicies,]
@@ -37,15 +39,36 @@ testing_data <- testing_data[indicies,]
 #Distribution of sentiments looks reasonably balanced
 training_labels <- training_data$Sentiment
 
-ggplot(data.frame(Sentiment = training_labels), aes(x = Sentiment, fill = Sentiment))+
-  geom_bar()+
+ggplot(data.frame(Sentiment = training_labels), 
+       aes(x = fct_relevel(Sentiment, 
+                           "Extremely Negative", 
+                           "Negative", 
+                           "Neutral", 
+                           "Positive", 
+                           "Extremely Positive"), 
+           fill = fct_relevel(Sentiment, 
+                              "Extremely Negative", 
+                              "Negative", 
+                              "Neutral", 
+                              "Positive", 
+                              "Extremely Positive"))) +
+  geom_bar(col = "black") +
   labs(
+    x = "Sentiment",
     y = "Count",
-    title = "Class Distribution"
-  )+
+    title = "Class Distribution",
+    fill = "Sentiment"
+  ) +
   theme(
     plot.title = element_text(hjust = 0.5)
-  )
+  ) + 
+  scale_fill_manual(values = c(
+    "Extremely Negative" = "#d73027",  # deep red
+    "Negative" = "#fc8d59",            # orange-red
+    "Neutral" = "#fee08b",             # yellow
+    "Positive" = "#91cf60",            # light green
+    "Extremely Positive" = "#1a9850"   # deep green
+  ))
 
 
 # Pulling the labels, one-hot encoding
@@ -74,7 +97,6 @@ summary(testing_data)
 summary(training_labels)
 summary(testing_labels)
 
-#### C2.2 Preprocessing Text and labels ####
 
 # Replace invalid characters with blanks
 training_data <- iconv(training_data, from = "UTF-8", to = "UTF-8", sub = "")
