@@ -56,8 +56,13 @@ training_labels <- training_data$Sentiment %>%
 training_labels <- (as.numeric(training_labels)-1) %>% 
   to_categorical()
 
+#testing label to one-hot
 testing_labels <- testing_data$Sentiment %>% 
   as.factor()
+
+#need to zero index to use the to_categorical function
+testing_labels <- (as.numeric(testing_labels)-1) %>% 
+  to_categorical()
 
 #Isolating the tweets
 training_data <- training_data$OriginalTweet
@@ -134,4 +139,6 @@ history <- model %>% fit(
   batch_size = 32,
   validation_split = 0.2
 )
+
+
 
