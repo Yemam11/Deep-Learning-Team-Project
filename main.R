@@ -91,7 +91,7 @@ summary(lengths)
 # this covers most sequences, but will exclude any outliers
 max_length<- quantile(lengths, 0.9)
 
-#use the 1000 most common words
+#use the 10000 most common words
 max_features <- 10000
 
 #Tokenizing training data
@@ -102,7 +102,6 @@ training_sequences <- texts_to_sequences(tokenizer, training_data)
 
 
 #Tokenizing testing data
-
 testing_sequences <- texts_to_sequences(tokenizer, testing_data)
 
 #padding sequences
@@ -114,11 +113,11 @@ testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 
 model <- keras_model_sequential() %>%
   #embedding layer
-  layer_embedding(input_dim = max_features, output_dim = 8, input_length = max_length) %>%
+  layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
   #flattening
   layer_flatten() %>%  
   #One hidden layer
-  layer_dense(units = 512, activation = "relu") %>% 
+  layer_dense(units = 256, activation = "relu") %>% 
   #output layer
   layer_dense(units = 5, activation = "softmax")
 
@@ -135,10 +134,13 @@ model %>% compile(
 history <- model %>% fit(
   training_data,
   training_labels,
-  epochs = 10,
+  epochs = 3, # overfitting starts after 3 epochs accoring to the tuning
   batch_size = 32,
   validation_split = 0.2
 )
 
+plot(history)
 
+perf <- evaluate(model, testing_data, testing_labels)
+perf
 
