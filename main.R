@@ -86,29 +86,26 @@ summary(lengths)
 # this covers most sequences, but will exclude any outliers
 max_length<- quantile(lengths, 0.9)
 
-#use the 1000 most common words
+#use the 10000 most common words
 max_features <- 10000
 
 #Tokenizing training data
-training_tokenizer <- text_tokenizer(num_words = max_features) %>%
+tokenizer <- text_tokenizer(num_words = max_features) %>%
   fit_text_tokenizer(training_data)
 
-training_sequences <- texts_to_sequences(training_tokenizer, training_data)
+training_sequences <- texts_to_sequences(tokenizer, training_data)
 
 
 #Tokenizing testing data
-testing_tokenizer <- text_tokenizer(num_words = max_features) %>%
-  fit_text_tokenizer(testing_data)
 
-testing_sequences <- texts_to_sequences(testing_tokenizer, testing_data)
+testing_sequences <- texts_to_sequences(tokenizer, testing_data)
 
 #padding sequences
 training_data <- pad_sequences(training_sequences, maxlen = max_length)
 testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 
 
-#### C2.3 Creating a simple FFNN ####
-
+#### C2.3 ####
 
 model <- keras_model_sequential() %>%
   #embedding layer
