@@ -170,6 +170,22 @@ max_length<- quantile(lengths, 0.9)
 training_data <- pad_sequences(training_sequences, maxlen = max_length)
 testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 
+#View the distribution of the lengths 
+#make lengths a data frame
+tweet_df <- data.frame(length = lengths)
+#Compute quantiles for 5% and 95%
+lower_bound <- quantile(tweet_df$length, 0.05)
+upper_bound <- quantile(tweet_df$length, 0.95)
+#Classfiy data as within the middle 90% or outside it
+tweet_df$category <- ifelse(tweet_df$length < lower_bound | tweet_df$length > upper_bound, "Outside", "Middle 90%")
+# Make a histogram with ggplot to show distribution and inside 90%
+ggplot(tweet_df, aes(x = length, fill = category)) +
+  geom_histogram(binwidth = 5, color = "black", alpha = 0.7) +
+  scale_fill_manual(values = c("Middle 90%" = "blue", "Outside" = "red")) +
+  labs(title = "Distribution of Tweet Length", x = "Tweet Length", y = "Count", fill = "Legend") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 
 #### C2.3 - ####
 
@@ -207,4 +223,198 @@ plot(history)
 
 perf <- evaluate(model, testing_data, testing_labels)
 perf
+
+#### C2.7 ####
+
+# Replace the simple RNN with a LSTM model, using also dropout. Comment on any improvement in the performance.
+
+# LSTM 4
+model_lstm4 <- keras_model_sequential() %>%
+  # embedding layer
+  layer_embedding(input_dim = max_features, output_dim = 64) %>% 
+  # lstm layer
+  layer_lstm(units = 64, dropout = 0.2, recurrent_dropout = 0.2) %>% # set the dropout rate to 0.2 -> balance overfitting and accuracy  
+  # dense layer
+  layer_dense(units = 5, activation = "sigmoid")
+
+# compile the model
+model_lstm4 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("acc")
+)
+
+# run the model 
+history_lstm4 <- model_lstm4 %>% fit(
+  training_data, 
+  training_labels,
+  epochs = 10, 
+  batch_size = 32, 
+  validation_split = 0.2
+)
+
+# test the model 
+perf_lstm4 <- evaluate(model_lstm4, testing_data, testing_labels)
+perf_lstm4
+
+# save the model and its history
+save(history_lstm4, perf_lstm4, file = "lstm4.RData")
+plot(history_lstm4)
+
+# other LSTM models ran with less high accurscies (testing different parameters)
+# models commented out since not used for purpose of this assignment
+# model results in report under C2Q7
+
+# model_lstm1 <- keras_model_sequential() %>%
+#   layer_embedding(input_dim = max_features, output_dim = 128) %>% # output dim same as others, as is input dim !!! ask youssef
+#   layer_lstm(units = 128, dropout = 0.2, recurrent_dropout = 0.2) %>% # set the dropout rate to 0.2 -> balance overfitting and accuracy  
+#   layer_dense(units = 5, activation = "sigmoid")
+# 
+# # compile the model
+# model_lstm1 %>% compile(
+#   optimizer = "rmsprop",
+#   loss = "categorical_crossentropy",
+#   metrics = c("acc")
+# )
+# 
+# # run the model 
+# history_lstm1 <- model_lstm1 %>% fit(
+#   training_data, 
+#   training_labels,
+#   epochs = 20, 
+#   batch_size = 32, 
+#   validation_split = 0.2
+# )
+# 
+# 
+# # test the model 
+# perf_lstm1 <- evaluate(model_lstm1, testing_data, testing_labels)
+# perf_lstm1
+# 
+# # save the model and its history
+# save(history_lstm1, perf_lstm1, file = "lstm1.RData")
+# plot(history_lstm1)
+# 
+# # 2 try with 3 epcohs
+# model_lstm2 <- keras_model_sequential() %>%
+#   layer_embedding(input_dim = max_features, output_dim = 64) %>% # output dim same as others, as is input dim !!! ask youssef
+#   layer_lstm(units = 64, dropout = 0.2, recurrent_dropout = 0.2) %>% # set the dropout rate to 0.2 -> balance overfitting and accuracy  
+#   layer_dense(units = 5, activation = "sigmoid")
+# 
+# 
+# # compile the model
+# model_lstm2 %>% compile(
+#   optimizer = "rmsprop",
+#   loss = "categorical_crossentropy",
+#   metrics = c("acc")
+# )
+# 
+# # run the model 
+# history_lstm2 <- model_lstm2 %>% fit(
+#   training_data, 
+#   training_labels,
+#   epochs = 3, 
+#   batch_size = 32, 
+#   validation_split = 0.2
+# )
+# 
+# # test the model 
+# perf_lstm2 <- evaluate(model_lstm2, testing_data, testing_labels)
+# perf_lstm2
+# 
+# # save the model and its history
+# save(history_lstm2, perf_lstm2, file = "lstm2.RData")
+# plot(history_lstm2)
+# 
+# # up the dropoiut
+# # LSTM 3
+# model_lstm3 <- keras_model_sequential() %>%
+#   layer_embedding(input_dim = max_features, output_dim = 64) %>% # output dim same as others, as is input dim !!! ask youssef
+#   layer_lstm(units = 64, dropout = 0.3, recurrent_dropout = 0.3) %>% # set the dropout rate to 0.2 -> balance overfitting and accuracy  
+#   layer_dense(units = 5, activation = "sigmoid")
+# 
+# 
+# # compile the model
+# model_lstm3 %>% compile(
+#   optimizer = "rmsprop",
+#   loss = "categorical_crossentropy",
+#   metrics = c("acc")
+# )
+# 
+# # run the model 
+# history_lstm3 <- model_lstm3 %>% fit(
+#   training_data, 
+#   training_labels,
+#   epochs = 15, 
+#   batch_size = 32, 
+#   validation_split = 0.2
+# )
+# 
+# # test the model 
+# perf_lstm3 <- evaluate(model_lstm3, testing_data, testing_labels)
+# perf_lstm3
+# 
+# # save the model and its history 
+# save(history_lstm3, perf_lstm3, file = "lstm3.RData")
+# plot(history_lstm3)
+#
+# LSTM 5
+# model_lstm5 <- keras_model_sequential() %>%
+#   layer_embedding(input_dim = max_features, output_dim = 64) %>% # output dim same as others, as is input dim !!! ask youssef
+#   layer_lstm(units = 32, dropout = 0.3, recurrent_dropout = 0.3) %>% # set the dropout rate to 0.2 -> balance overfitting and accuracy  
+#   layer_dense(units = 5, activation = "sigmoid")
+# 
+# # compile the model
+# model_lstm5 %>% compile(
+#   optimizer = "rmsprop",
+#   loss = "categorical_crossentropy",
+#   metrics = c("acc")
+# )
+# 
+# # run the model 
+# history_lstm5 <- model_lstm5 %>% fit(
+#   training_data, 
+#   training_labels,
+#   epochs = 10, 
+#   batch_size = 32, 
+#   validation_split = 0.2
+# )
+# 
+# # test the model 
+# perf_lstm5 <- evaluate(model_lstm5, testing_data, testing_labels)
+# perf_lstm5
+# 
+# # save the model and its history
+# save(history_lstm5, perf_lstm5, file = "lstm5.RData")
+# plot(history_lstm5)
+# 
+# # LSTM 6
+# model_lstm6 <- keras_model_sequential() %>%
+#   layer_embedding(input_dim = max_features, output_dim = 64) %>% # output dim same as others, as is input dim !!! ask youssef
+#   layer_lstm(units = 64, dropout = 0.3, recurrent_dropout = 0.3) %>% # set the dropout rate to 0.2 -> balance overfitting and accuracy  
+#   layer_dense(units = 5, activation = "sigmoid")
+# 
+# # compile the model
+# model_lstm6 %>% compile(
+#   optimizer = "rmsprop",
+#   loss = "categorical_crossentropy",
+#   metrics = c("acc")
+# )
+# 
+# # run the model 
+# history_lstm6 <- model_lstm6 %>% fit(
+#   training_data, 
+#   training_labels,
+#   epochs = 10, 
+#   batch_size = 32, 
+#   validation_split = 0.2
+# )
+# 
+# # test the model 
+# perf_lstm6 <- evaluate(model_lstm6, testing_data, testing_labels)
+# perf_lstm6
+# 
+# save(history_lstm6, perf_lstm6, file = "lstm6.RData")
+# plot(history_lstm6)
+# 
 
