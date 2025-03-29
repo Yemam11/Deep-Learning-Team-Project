@@ -210,6 +210,8 @@ save(history, perf, file = "ffn_res.RData")
 plot(history)
 
 #### C2.5 ####
+
+## Baseline Model
 model_rnn <- keras_model_sequential() %>%
   # embedding layer
   layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
@@ -233,7 +235,7 @@ model_rnn %>% compile(
 history_rnn <- model_rnn %>% fit(
   training_data,
   training_labels,
-  epochs = 6,
+  epochs = 10,
   batch_size = 32,
   validation_split = 0.2
 )
@@ -241,9 +243,89 @@ history_rnn <- model_rnn %>% fit(
 # test the model 
 perf_rnn <- evaluate(model_rnn, testing_data, testing_labels)
 perf_rnn
-
+## Test performance - 0.5847815
+plot(history_rnn)
 save(history_rnn, perf_rnn, file = "rnn_res.RData")
-plot(history_rnn) 
+
+# Train with less epochs
+history_rnn_0.1 <- model_rnn %>% fit(
+  training_data,
+  training_labels,
+  epochs = 6,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# Test the model
+perf_rnn_0.1 <- evaluate(model_rnn, testing_data, testing_labels)
+perf_rnn_0.1
+
+plot(history_rnn_0.1)
+save(history_rnn_0.1, perf_rnn_0.1, file = "rnn_res_0.1.RData")
+
+## Test model with less number of units
+model_rnn_1.1 <- keras_model_sequential() %>%
+  # embedding layer
+  layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
+  # recurrent layer
+  layer_simple_rnn(units = 64) %>%
+  # One hidden layer
+  layer_dense(units = 256, activation = "relu") %>% 
+  # output layer
+  layer_dense(units = 5, activation = "softmax") %>% compile(
+    optimizer = "rmsprop",
+    loss = "categorical_crossentropy",
+    metrics = c("acc")
+  )
+
+# training the model
+history_rnn_1.1 <- model_rnn_1.1 %>% fit(
+  training_data,
+  training_labels,
+  epochs = 3,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# test the model 
+perf_rnn_1.1 <- evaluate(model_rnn_1.1, testing_data, testing_labels)
+perf_rnn_1.1
+## Performance accuracy - 0.6061085
+
+save(history_rnn_1.1, perf_rnn_1.1, file = "rnn_res_1.1.RData")
+plot(history_rnn_1.1) 
+
+## Test model with more number of units
+model_rnn_1.2 <- keras_model_sequential() %>%
+  # embedding layer
+  layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
+  # recurrent layer
+  layer_simple_rnn(units = 256) %>%
+  # One hidden layer
+  layer_dense(units = 256, activation = "relu") %>% 
+  # output layer
+  layer_dense(units = 5, activation = "softmax") %>% compile(
+    optimizer = "rmsprop",
+    loss = "categorical_crossentropy",
+    metrics = c("acc")
+  )
+
+# training the model
+history_rnn_1.2 <- model_rnn_1.2 %>% fit(
+  training_data,
+  training_labels,
+  epochs = 13,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# test the model 
+perf_rnn_1.2 <- evaluate(model_rnn_1.2, testing_data, testing_labels)
+perf_rnn_1.2
+
+save(history_rnn_1.2, perf_rnn_1.2, file = "rnn_res_1.2.RData")
+plot(history_rnn_1.2)
+
 
 #### C2.6 ####
 model_rnn2 <- keras_model_sequential() %>%
