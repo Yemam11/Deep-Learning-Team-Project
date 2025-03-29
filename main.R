@@ -353,11 +353,10 @@ model_rnn2 %>% compile(
 history_rnn2 <- model_rnn2 %>% fit(
   training_data,
   training_labels,
-  epochs = 20,
+  epochs = 15,
   batch_size = 32,
   validation_split = 0.2
 )
-
 
 # test the model 
 perf_rnn2 <- evaluate(model_rnn2, testing_data, testing_labels)
@@ -365,4 +364,79 @@ perf_rnn2
 
 save(history_rnn2, perf_rnn2, file = "rnn2_res.RData")
 plot(history_rnn2)
-## I think epoch = 12 is enough or max 15
+
+# Tuning with more units
+model_rnn2.1 <- keras_model_sequential() %>%
+  # embedding layer
+  layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
+  # 1st recurrent layer
+  layer_simple_rnn(units = 128, return_sequences = T) %>%
+  # 2nd recurrent layer
+  layer_simple_rnn(units = 128) %>%
+  # One hidden layer
+  layer_dense(units = 256, activation = "relu") %>% 
+  # output layer
+  layer_dense(units = 5, activation = "softmax")
+
+model_rnn2.1
+
+#Compiling the model
+model_rnn2.1 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("acc")
+)
+
+#training the model
+history_rnn2.1 <- model_rnn2.1 %>% fit(
+  training_data,
+  training_labels,
+  epochs = 15,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# test the model 
+perf_rnn2.1 <- evaluate(model_rnn2.1, testing_data, testing_labels)
+perf_rnn2.1
+
+save(history_rnn2.1, perf_rnn2.1, file = "rnn2_res2.1.RData")
+plot(history_rnn2.1)
+
+# Tuning with less units
+model_rnn2.2 <- keras_model_sequential() %>%
+  # embedding layer
+  layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
+  # 1st recurrent layer
+  layer_simple_rnn(units = 128, return_sequences = T) %>%
+  # 2nd recurrent layer
+  layer_simple_rnn(units = 32) %>%
+  # One hidden layer
+  layer_dense(units = 256, activation = "relu") %>% 
+  # output layer
+  layer_dense(units = 5, activation = "softmax")
+
+model_rnn2.2
+
+#Compiling the model
+model_rnn2.2 %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("acc")
+)
+
+#training the model
+history_rnn2.2 <- model_rnn2.2 %>% fit(
+  training_data,
+  training_labels,
+  epochs = 15,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# test the model 
+perf_rnn2.2 <- evaluate(model_rnn2.2, testing_data, testing_labels)
+perf_rnn2.2
+
+save(history_rnn2.2, perf_rnn2.2, file = "rnn2_res2.2.RData")
+plot(history_rnn2.2)
