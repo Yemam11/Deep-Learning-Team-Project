@@ -190,6 +190,82 @@ ggplot(tweet_df, aes(x = length, fill = category)) +
 
 #### C2.3 - ####
 
+# # Tuning ##
+# 
+# if (F){
+#   # Hyperparameter grids to search
+#   hidden_units_grid <- c(128, 256, 512)
+#   output_dims <- c(32, 64, 128)
+#   batch_sizes <- c(32, 64)
+#   
+#   tuning_results <- list()  # store results
+#   
+#   #Set variables to hold temp resutls
+#   best_acc <- 0
+#   best_config <- NULL
+#   
+#   counter <- 1
+#   
+#   for (units in hidden_units_grid) {
+#     for (dim in output_dims) {
+#       for (bs in batch_sizes) {
+#         
+#         cat(sprintf("\n=== Training model %d with units=%d, output dim=%.4f, batch_size=%d ===\n",
+#                     counter, units, dim, bs))
+#         
+#         # Define the model
+#         model <- keras_model_sequential() %>%
+#           layer_embedding(input_dim = max_features, output_dim = 8, input_length = max_length) %>%
+#           layer_flatten() %>%
+#           layer_dense(units = units, activation = "relu") %>%
+#           layer_dense(units = 5, activation = "softmax")
+#         
+#         # Compile using SGD with custom lr and momentum
+#         model %>% compile(
+#           optimizer = "rmsprop",
+#           loss = "categorical_crossentropy",
+#           metrics = c("accuracy")
+#         )
+#         
+#         # Fit the model
+#         history <- model %>% fit(
+#           training_data,
+#           training_labels,
+#           epochs = 5,        # set fewer epochs while searching
+#           batch_size = bs,
+#           validation_split = 0.2,
+#           verbose = 0        # make it silent for easier reading
+#         )
+#         
+#         # Extract final validation accuracy
+#         val_acc <- tail(history$metrics$val_accuracy, 1)
+#         cat(sprintf("Final val_accuracy: %.4f\n", val_acc))
+#         
+#         # Save results
+#         tuning_results[[counter]] <- list(
+#           units      = units,
+#           output_dim = dim,
+#           batch_size = bs,
+#           val_acc    = val_acc
+#         )
+#         
+#         # Keep track of best result
+#         if (val_acc > best_acc) {
+#           best_acc <- val_acc
+#           best_config <- tuning_results[[counter]]
+#         }
+#         
+#         #add one to the counter
+#         counter <- counter + 1
+#         
+#       }
+#     }
+#   }
+#   
+#   tuning_results[["best_config"]] <- best_config
+#   save(tuning_results, file = "tuning_results2.RData")
+# }
+
 model <- keras_model_sequential() %>%
   #embedding layer
   layer_embedding(input_dim = max_features, output_dim = 128, input_length = max_length) %>%
