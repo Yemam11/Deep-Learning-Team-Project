@@ -174,14 +174,15 @@ testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 #make lengths a data frame
 tweet_df <- data.frame(length = lengths)
 #Compute quantiles for 5% and 95%
-lower_bound <- quantile(tweet_df$length, 0.05)
-upper_bound <- quantile(tweet_df$length, 0.95)
+upper_bound <- quantile(tweet_df$length, 0.90)
 #Classfiy data as within the middle 90% or outside it
-tweet_df$category <- ifelse(tweet_df$length < lower_bound | tweet_df$length > upper_bound, "Outside", "Middle 90%")
+tweet_df$category <- ifelse(tweet_df$length < upper_bound, "Lower 90%", "Upper 10%")
+# Make the levels into a fator
+tweet_df$category <- factor(tweet_df$category, levels = c("Upper 10%", "Lower 90%"))
 # Make a histogram with ggplot to show distribution and inside 90%
 ggplot(tweet_df, aes(x = length, fill = category)) +
   geom_histogram(binwidth = 5, color = "black", alpha = 0.7) +
-  scale_fill_manual(values = c("Middle 90%" = "blue", "Outside" = "red")) +
+  scale_fill_manual(values = c("Lower 90%" = "blue", "Upper 10%" = "red")) +
   labs(title = "Distribution of Tweet Length", x = "Tweet Length", y = "Count", fill = "Legend") +
   theme(
     plot.title = element_text(hjust = 0.5)
