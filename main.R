@@ -59,6 +59,9 @@ training_labels <- (as.numeric(training_labels)-1) %>%
 testing_labels <- testing_data$Sentiment %>% 
   as.factor()
 
+testing_labels <- (as.numeric(testing_labels)-1) %>% 
+  to_categorical()
+
 #Isolating the tweets
 training_data <- training_data$OriginalTweet
 testing_data <- testing_data$OriginalTweet
@@ -86,126 +89,124 @@ summary(lengths)
 # this covers most sequences, but will exclude any outliers
 max_length<- quantile(lengths, 0.9)
 
-#use the 1000 most common words
+#use the 10000 most common words
 max_features <- 10000
 
 #Tokenizing training data
-training_tokenizer <- text_tokenizer(num_words = max_features) %>%
+tokenizer <- text_tokenizer(num_words = max_features) %>%
   fit_text_tokenizer(training_data)
 
-training_sequences <- texts_to_sequences(training_tokenizer, training_data)
+training_sequences <- texts_to_sequences(tokenizer, training_data)
 
 
 #Tokenizing testing data
-testing_tokenizer <- text_tokenizer(num_words = max_features) %>%
-  fit_text_tokenizer(testing_data)
 
-testing_sequences <- texts_to_sequences(testing_tokenizer, testing_data)
+testing_sequences <- texts_to_sequences(tokenizer, testing_data)
 
 #padding sequences
 training_data <- pad_sequences(training_sequences, maxlen = max_length)
 testing_data <- pad_sequences(testing_sequences, maxlen = max_length)
 
 
-#### C2.3 Creating a simple FFNN ####
+#### C2.3 ####
 
-
-
-## Tuning ##
+# Tuning
 
 if (F){
   # Hyperparameter grids to search
   hidden_units_grid <- c(128, 256, 512)
-  learning_rates    <- c(0.01, 0.001)
-  momentums         <- c(0.0, 0.9)
-  batch_sizes       <- c(32, 64, 128)
+  output_dims <- c(32, 64, 128)
+  batch_sizes <- c(32, 64)
   
   tuning_results <- list()  # store results
   
+  #Set variables to hold temp resutls
   best_acc <- 0
   best_config <- NULL
-  best_model <- NULL
   
   counter <- 1
   
   for (units in hidden_units_grid) {
-    for (lr in learning_rates) {
-      for (mom in momentums) {
-        for (bs in batch_sizes) {
+    for (dim in output_dims) {
+      for (bs in batch_sizes) {
           
-          cat(sprintf("\n=== Training model %d with units=%d, lr=%.4f, momentum=%.1f, batch_size=%d ===\n",
-                      counter, units, lr, mom, bs))
-          
-          # Define the model
-          model <- keras_model_sequential() %>%
-            layer_embedding(input_dim = max_features, output_dim = 8, input_length = max_length) %>%
-            layer_flatten() %>%
-            layer_dense(units = units, activation = "relu") %>%
-            layer_dense(units = 5, activation = "softmax")
-          
-          # Compile using SGD with custom lr and momentum
-          model %>% compile(
-            optimizer = optimizer_sgd(
-              learning_rate = lr,
-              momentum = mom),
-            loss = "categorical_crossentropy",
-            metrics = c("accuracy")
-          )
-          
-          # Fit the model
-          history <- model %>% fit(
-            training_data,
-            training_labels,
-            epochs = 5,        # set fewer epochs while searching
-            batch_size = bs,
-            validation_split = 0.2,
-            verbose = 0        #Silence output
-          )
-          
-          # Extract final validation accuracy
-          val_acc <- tail(history$metrics$val_accuracy, 1)
-          cat(sprintf("Final val_accuracy: %.4f\n", val_acc))
-          
-          # Save results
-          tuning_results[[counter]] <- list(
-            units      = units,
-            learning_rate         = lr,
-            momentum   = mom,
-            batch_size = bs,
-            val_acc    = val_acc
-          )
-          
-          # Keep track of best accuracy
-          if (val_acc > best_acc) {
-            best_acc <- val_acc
-            best_config <- tuning_results[[counter]]
-            best_model <- model
-          }
-          
-          counter <- counter + 1
+        cat(sprintf("\n=== Training model %d with units=%d, output dim=%.4f, batch_size=%d ===\n",
+                    counter, units, dim, bs))
+        
+        # Define the model
+        model <- keras_model_sequential() %>%
+          layer_embedding(input_dim = max_features, output_dim = 8, input_length = max_length) %>%
+          layer_flatten() %>%
+          layer_dense(units = units, activation = "relu") %>%
+          layer_dense(units = 5, activation = "softmax")
+        
+        # Compile using SGD with custom lr and momentum
+        model %>% compile(
+          optimizer = "rmsprop",
+          loss = "categorical_crossentropy",
+          metrics = c("accuracy")
+        )
+
+        # Fit the model
+        history <- model %>% fit(
+          training_data,
+          training_labels,
+          epochs = 5,        # set fewer epochs while searching
+          batch_size = bs,
+          validation_split = 0.2,
+          verbose = 0        # make it silent for easier reading
+        )
+        
+        # Extract final validation accuracy
+        val_acc <- tail(history$metrics$val_accuracy, 1)
+        cat(sprintf("Final val_accuracy: %.4f\n", val_acc))
+        
+        # Save results
+        tuning_results[[counter]] <- list(
+          units      = units,
+          output_dim = dim,
+          batch_size = bs,
+          val_acc    = val_acc
+        )
+        
+        # Keep track of best result
+        if (val_acc > best_acc) {
+          best_acc <- val_acc
+          best_config <- tuning_results[[counter]]
         }
+        
+        #add one to the counter
+        counter <- counter + 1
+        
       }
     }
   }
   
-  #Looking at the results
-  View(tuning_results)
-  
-  #pulling the best configuration
-  best_config
-  
   tuning_results[["best_config"]] <- best_config
-  
-  #Save so you dont have to keep rerunning to get the results
-  save(tuning_results, file = "tuning_results.RData")
+  save(tuning_results, file = "tuning_results2.RData")
 }
 
 
-#loading the results
-load(file="tuning_results.Rdata")
-best_config <- tuning_results[["best_config"]]
 
-#creating the model
+
+# Load Data file generated by creating hyperparameter grid and finding best results
+# This was done with the same code as above but with the SGD optimizer
+load("tuning_results.RData")
+tuning_results$best_config
+
+#This was done with the rmsprop optimizer - better validation accuracy
+load("tuning_results2.RData")
+tuning_results$best_config
+
+best_config <-tuning_results$best_config
+
+#unpack results
+c(units, output_dim, batch_size, val_acc) %<-% tuning_results$best_config
+# 256 units in the hidden layer
+# 128 for the output dimension of the embedding layer
+# Batch size of 32
+
+
 model <- keras_model_sequential() %>%
   #embedding layer
   layer_embedding(input_dim = max_features, output_dim = 8, input_length = max_length) %>%
@@ -268,4 +269,5 @@ history <- model %>% fit(
   validation_split = 0.2
 )
 
-# RMSprop is better
+perf <- evaluate(model, testing_data, testing_labels)
+perf
